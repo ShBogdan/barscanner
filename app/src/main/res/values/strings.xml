@@ -1,0 +1,24 @@
+<resources>
+    <string name="app_name">Scanner Sample</string>
+    <string name="scanner_activity">ZXing Scanner - Full Activity</string>
+    <string name="scanner_fragment_activity">ZXing Scanner - Full Fragment Activity</string>
+    <string name="simple_scanner_activity">ZXing Scanner - Simple Activity</string>
+    <string name="simple_scanner_fragment_activity">ZXing Scanner - Simple Fragment Activity</string>
+    <string name="full_screen_scanner_fragment_activity">ZXing Scanner - Full Screen Fragment Activity</string>
+    <string name="simple_activity_sample">Simple Activity Sample</string>
+    <string name="simple_fragment_sample">Simple Fragment Sample</string>
+    <string name="activity_sample">Full Activity Sample</string>
+    <string name="fragment_sample">Full Fragment Sample</string>
+    <string name="full_screen_sample">Full Screen Fragment Sample</string>
+    <string name="toggle_flash">Flash</string>
+    <string name="flash_on">Подсветка [ON]</string>
+    <string name="flash_off">Подсветка [OFF]</string>
+    <string name="auto_focus_on">Автофокус [ON]</string>
+    <string name="auto_focus_off">Автофокус [OFF]</string>
+    <string name="formats">Formats</string>
+    <string name="choose_formats">Choose Formats</string>
+    <string name="select_camera">Выбрать камеру</string>
+    <string name="ok_button">Да</string>
+    <string name="cancel_button">Отмена</string>
+    <string name="email">Укажите почтовый ящик</string>
+</resources>
