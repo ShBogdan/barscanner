@@ -21,4 +21,6 @@
     <string name="ok_button">Да</string>
     <string name="cancel_button">Отмена</string>
     <string name="email">Укажите почтовый ящик</string>
+    <string name="title_activity_main">Barscanner</string>
+    <string name="menuitem_refresh">Синхронизировать с сервером</string>
 </resources>

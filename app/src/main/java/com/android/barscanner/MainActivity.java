@@ -1,280 +1,305 @@
 package com.android.barscanner;
 
 import android.content.Context;
-import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
-import android.media.Ringtone;
-import android.media.RingtoneManager;
-import android.net.Uri;
 import android.os.Bundle;
-import android.support.v4.app.DialogFragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.view.MenuItemCompat;
-import android.support.v7.app.AlertDialog;
+import android.support.design.widget.FloatingActionButton;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
-
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.Result;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
-import me.dm7.barcodescanner.zxing.ZXingScannerView;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
-public class MainActivity extends BaseScannerActivity implements MessageDialogFragment.MessageDialogListener,
-        ZXingScannerView.ResultHandler, FormatSelectorDialogFragment.FormatSelectorDialogListener,
-        CameraSelectorDialogFragment.CameraSelectorDialogListener {
-    private static final String FLASH_STATE = "FLASH_STATE";
-    private static final String AUTO_FOCUS_STATE = "AUTO_FOCUS_STATE";
-    private static final String SELECTED_FORMATS = "SELECTED_FORMATS";
-    private static final String CAMERA_ID = "CAMERA_ID";
-    private final String SAVED_EMAIL = "SAVED_EMAIL";
-    private final String SETTINGS = "SETTINGS";
-    private ZXingScannerView mScannerView;
-    private boolean mFlash;
-    private boolean mAutoFocus;
-    private ArrayList<Integer> mSelectedIndices;
-    private int mCameraId = -1;
-    private String email;
-    private SharedPreferences sp;
-    private SharedPreferences.Editor editor;
+public class MainActivity extends AppCompatActivity {
+    private final String BARCODES = "BARCODES";
+    private final String SERVER_BARCODES = "SERVER_BARCODES";
+    private final String SERVER_CATEGORY = "SERVER_CATEGORY";
+    public static final String BASE_URL = "http://77.87.144.159:8080/";
 
+    private SharedPreferences spBc;
+    private SharedPreferences spServerBc;
+    private SharedPreferences.Editor mEditorServerBc;
+    private SharedPreferences spServerCat;
+    private SharedPreferences.Editor mEditorServerCat;
+    private ListView mBarCodeList;
+    private Menu optionsMenu;
+
+    public static ArrayList<String> categoryArray;
+    public static ArrayList<String> barcodeArray;
 
     @Override
-    public void onCreate(Bundle state) {
-        super.onCreate(state);
-        if(state != null) {
-            mFlash = state.getBoolean(FLASH_STATE, false);
-            mAutoFocus = state.getBoolean(AUTO_FOCUS_STATE, true);
-            mSelectedIndices = state.getIntegerArrayList(SELECTED_FORMATS);
-            mCameraId = state.getInt(CAMERA_ID, -1);
-        } else {
-            mFlash = false;
-            mAutoFocus = true;
-            mSelectedIndices = null;
-            mCameraId = -1;
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(categoryArray.size()==0){
+                    Toast.makeText(getApplication(), "Вы не синхронизированы с базой", Toast.LENGTH_LONG).show();
+                }else{
+                Intent myIntent = new Intent(MainActivity.this, ScanerActivity.class);
+                MainActivity.this.startActivity(myIntent);}
+            }
+        });
+
+        getSpBarcode();
+        getSpCategory();
+
+        mBarCodeList = (ListView) findViewById(R.id.list_barcodes);
+
+
+        //        Intent intent = new Intent(getBaseContext(), BarcodActivity.class);
+        //        startActivity(intent);
+
+    }
+
+
+    private List<Barcode> getAllValues() {
+        spBc = getSharedPreferences ( BARCODES, Context.MODE_PRIVATE );
+        Map<String, ?> values = spBc.getAll();
+        List<Barcode> barcodesList = new ArrayList<>();
+        for (Map.Entry<String, ?> entry : values.entrySet()) {
+            Barcode barcodes = new Barcode(entry.getKey(), entry.getValue().toString());
+//            Log.d("MyLog", "getAllValues:");
+//            Log.d("MyLog", entry.getKey() + " " + entry.getValue().toString());
+            barcodesList.add(barcodes);
+        }
+        return barcodesList;
+    }
+
+    private class Barcode {
+        public final String code;
+        public final String cat;
+
+        public Barcode(String code, String cat) {
+            this.code = code;
+            this.cat = cat;
+        }
+    }
+
+    private class BarCodeAdapter extends ArrayAdapter<Barcode> {
+
+        public BarCodeAdapter(Context context, List<Barcode> list) {
+            super(context, android.R.layout.simple_list_item_1, list);
         }
 
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            Barcode barcode = getItem(position);
 
-        setContentView(R.layout.activity_simple_scanner);
-        setupToolbar();
-
-        ViewGroup contentFrame = (ViewGroup) findViewById(R.id.content_frame);
-        mScannerView = new ZXingScannerView(this);
-        setupFormats();
-        contentFrame.addView(mScannerView);
+            if (convertView == null) {
+                convertView = LayoutInflater.from(getContext())
+                        .inflate(R.layout.item, null);
+            }
+            ((TextView) convertView.findViewById(R.id.text1))
+                    .setText(barcode.code);
+            ((TextView) convertView.findViewById(R.id.text2))
+                    .setText(barcode.cat);
+//            if(barcodeArray.contains(barcode.code)){
+//                convertView.findViewById(R.id.linearLayout).setBackgroundResource(R.color.exist);
+//            }
+            return convertView;
+        }
     }
 
     @Override
-    public void onResume() {
+    protected void onResume() {
         super.onResume();
-        mScannerView.setResultHandler(this);
-        mScannerView.startCamera(mCameraId);
-        mScannerView.setFlash(mFlash);
-        mScannerView.setAutoFocus(mAutoFocus);
+        initListView();
+
+
     }
 
-    @Override
-    public void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        outState.putBoolean(FLASH_STATE, mFlash);
-        outState.putBoolean(AUTO_FOCUS_STATE, mAutoFocus);
-        outState.putIntegerArrayList(SELECTED_FORMATS, mSelectedIndices);
-        outState.putInt(CAMERA_ID, mCameraId);
+    private void initListView(){
+        Log.d("MyLog", "Формируем ListView");
+
+        ArrayAdapter<Barcode> adapter = new BarCodeAdapter(this, getAllValues());
+        mBarCodeList.setAdapter(adapter);
+        mBarCodeList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                                                @Override
+                                                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                                                    TextView t1 = (TextView) view.findViewById(R.id.text1);
+                                                    TextView t2 = (TextView) view.findViewById(R.id.text2);
+                                                    String code = t1.getText().toString();
+                                                    String cat = t2.getText().toString();
+
+                                                    Intent intent = new Intent(getBaseContext(), BarcodActivity.class);
+                                                    intent.putExtra("EXTRA_CODE", code);
+                                                    intent.putExtra("EXTRA_CAT", cat);
+                                                    startActivity(intent);
+                                                }
+                                            }
+        );
+    }
+
+    private void getSpBarcode(){
+        Log.d("MyLog", "Загрузка баркодов с sp");
+        barcodeArray = new ArrayList<>();
+        spServerBc = getSharedPreferences(SERVER_BARCODES, Context.MODE_PRIVATE);
+        Map<String, ?> values = spServerBc.getAll();
+        for (Map.Entry<String, ?> entry : values.entrySet()) {
+            barcodeArray.add(entry.getKey());
+        }
+    }
+
+    private void getSpCategory(){
+        Log.d("MyLog", "Загрузка затегорий с sp");
+        categoryArray = new ArrayList<>();
+        spServerCat = getSharedPreferences(SERVER_CATEGORY, Context.MODE_PRIVATE);
+        Map<String, ?> values = spServerCat.getAll();
+        for (Map.Entry<String, ?> entry : values.entrySet()) {
+            categoryArray.add(entry.getKey());
+        }
+    }
+
+    void getRetrofitBarcodes() {
+        Log.d("MyLog", "Грузим баркоды с сервера и сохраняем в sp");
+
+        spServerBc = getSharedPreferences(SERVER_BARCODES, Context.MODE_PRIVATE);
+        mEditorServerBc = spServerBc.edit();
+        mEditorServerBc.clear();
+
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(BASE_URL)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        RequestInterface service = retrofit.create(RequestInterface.class);
+
+        Call<Result> call = service.getBarcodeList();
+
+        call.enqueue(new Callback<Result>() {
+
+            @Override
+            public void onResponse(Call<Result> call, Response<Result> response) {
+                barcodeArray = new ArrayList<>();
+
+                Result r = response.body();
+                List<List<String>> s = r.getBarcodes();
+                for (int i = 0; i < s.size(); i++) {
+                    barcodeArray.add(s.get(i).get(0));
+                    mEditorServerBc.putString(s.get(i).get(0), "");
+                }
+                mEditorServerBc.commit();
+                initListView();
+                Toast.makeText(getApplication(), "Коды обновлены", Toast.LENGTH_SHORT).show();
+                setRefreshActionButtonState(false);
+
+            }
+
+            @Override
+            public void onFailure(Call<Result> call, Throwable t) {
+                Log.d("MyLog", "error не удалось подключится к серверу" + t.toString());
+                Toast.makeText(getApplication(), "Не удалось подключится к серверу", Toast.LENGTH_SHORT).show();
+                setRefreshActionButtonState(false);
+
+            }
+        });
+
+    }
+    void getRetrofitCategoty() {
+        Log.d("MyLog", "Грузим категории с сервера и сохраняем в sp");
+
+        spServerCat = getSharedPreferences(SERVER_CATEGORY, Context.MODE_PRIVATE);
+        mEditorServerCat = spServerCat.edit();
+        mEditorServerCat.clear();
+
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(BASE_URL)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        RequestInterface service = retrofit.create(RequestInterface.class);
+
+        Call<Result> call = service.getCatList();
+
+        call.enqueue(new Callback<Result>() {
+
+            @Override
+            public void onResponse(Call<Result> call, Response<Result> response) {
+                categoryArray = new ArrayList<>();
+
+
+                Result r = response.body();
+                List<List<String>> s = r.getCategorys();
+                for (int i = 0; i < s.size(); i++) {
+                    categoryArray.add(s.get(i).get(1));
+                    mEditorServerCat.putString(s.get(i).get(1), s.get(i).get(0));
+                }
+                mEditorServerCat.commit();
+               Toast.makeText(getApplication(), "Кактегории обновлены", Toast.LENGTH_SHORT).show();
+                setRefreshActionButtonState(false);
+
+            }
+
+            @Override
+            public void onFailure(Call<Result> call, Throwable t) {
+                Log.d("MyLog", "error не удалось подключится к серверу" + t.toString());
+                Toast.makeText(getApplication(), "Не удалось подключится к серверу", Toast.LENGTH_SHORT).show();
+                setRefreshActionButtonState(false);
+
+            }
+        });
+
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        MenuItem menuItem;
-
-        if(mFlash) {
-            menuItem = menu.add(Menu.NONE, R.id.menu_flash, 0, R.string.flash_on);
-        } else {
-            menuItem = menu.add(Menu.NONE, R.id.menu_flash, 0, R.string.flash_off);
-        }
-        MenuItemCompat.setShowAsAction(menuItem, MenuItem.SHOW_AS_ACTION_NEVER);
-
-
-        if(mAutoFocus) {
-            menuItem = menu.add(Menu.NONE, R.id.menu_auto_focus, 0, R.string.auto_focus_on);
-        } else {
-            menuItem = menu.add(Menu.NONE, R.id.menu_auto_focus, 0, R.string.auto_focus_off);
-        }
-        MenuItemCompat.setShowAsAction(menuItem, MenuItem.SHOW_AS_ACTION_NEVER);
-
-        //        menuItem = menu.add(Menu.NONE, R.id.menu_formats, 0, R.string.formats);
-        //        MenuItemCompat.setShowAsAction(menuItem, MenuItem.SHOW_AS_ACTION_NEVER);
-
-        menuItem = menu.add(Menu.NONE, R.id.menu_camera_selector, 0, R.string.select_camera);
-        MenuItemCompat.setShowAsAction(menuItem, MenuItem.SHOW_AS_ACTION_NEVER);
-
-        menuItem = menu.add(Menu.NONE, R.id.menu_email, 0, R.string.email);
-        MenuItemCompat.setShowAsAction(menuItem, MenuItem.SHOW_AS_ACTION_NEVER);
-
+        this.optionsMenu = menu;
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu, menu);
         return super.onCreateOptionsMenu(menu);
     }
-
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle presses on the action bar items
         switch (item.getItemId()) {
-            case R.id.menu_flash:
-                mFlash = !mFlash;
-                if(mFlash) {
-                    item.setTitle(R.string.flash_on);
-                } else {
-                    item.setTitle(R.string.flash_off);
-                }
-                mScannerView.setFlash(mFlash);
-                return true;
-            case R.id.menu_auto_focus:
-                mAutoFocus = !mAutoFocus;
-                if(mAutoFocus) {
-                    item.setTitle(R.string.auto_focus_on);
-                } else {
-                    item.setTitle(R.string.auto_focus_off);
-                }
-                mScannerView.setAutoFocus(mAutoFocus);
-                return true;
-            //            case R.id.menu_formats:
-            //                DialogFragment fragment = FormatSelectorDialogFragment.newInstance(this, mSelectedIndices);
-            //                fragment.show(getSupportFragmentManager(), "format_selector");
-            //                return true;
-            case R.id.menu_camera_selector:
-                mScannerView.stopCamera();
-                DialogFragment cFragment = CameraSelectorDialogFragment.newInstance(this, mCameraId);
-                cFragment.show(getSupportFragmentManager(), "camera_selector");
-                return true;
+            case R.id.airport_menuRefresh:
 
-            case R.id.menu_email:
+                Log.d("MyLog","pressed");
+                setRefreshActionButtonState(true);
 
-                AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                builder.setTitle("Email");
-
-                // Set up the input
-                final EditText input = new EditText(this);
-                // Specify the type of input expected; this, for example, sets the input as a password, and will mask the text
-                builder.setView(input);
-
-                sp = getSharedPreferences(SETTINGS, Context.MODE_PRIVATE);
-
-                if(sp.contains("SAVED_EMAIL")) {
-                    email = (sp.getString("SAVED_EMAIL", ""));
-                    input.setText(email);
-
-                }
-
-                // Set up the buttons
-                builder.setPositiveButton("Сохранить", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        email = input.getText().toString();
-                        editor = sp.edit();
-                        editor.putString(SAVED_EMAIL, email);
-                        editor.commit();
-                        Log.d("MyLog", sp.getString(SETTINGS, ""));
-                    }
-                });
-                builder.setNegativeButton("Отмена", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.cancel();
-                    }
-                });
-
-                builder.show();
-
+                getRetrofitBarcodes();
+                getRetrofitCategoty();
 
                 return true;
-
-            default:
-                return super.onOptionsItemSelected(item);
         }
+        return super.onOptionsItemSelected(item);
     }
 
-    @Override
-    public void handleResult(Result rawResult) {
-        try {
-            Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-            Ringtone r = RingtoneManager.getRingtone(getApplicationContext(), notification);
-            r.play();
-        } catch (Exception e) {}
-        showMessageDialog("Contents = " + rawResult.getText() + ", Format = " + rawResult.getBarcodeFormat().toString());
-    }
-
-    public void showMessageDialog(String message) {
-        DialogFragment fragment = MessageDialogFragment.newInstance("Отправить сообщение?", message, this);
-        fragment.show(getSupportFragmentManager(), "scan_results");
-    }
-
-    public void closeMessageDialog() {
-        closeDialog("scan_results");
-    }
-
-    public void closeFormatsDialog() {
-        closeDialog("format_selector");
-    }
-
-    public void closeDialog(String dialogName) {
-        FragmentManager fragmentManager = getSupportFragmentManager();
-        DialogFragment fragment = (DialogFragment) fragmentManager.findFragmentByTag(dialogName);
-        if(fragment != null) {
-            fragment.dismiss();
-        }
-    }
-
-    @Override
-    public void onDialogPositiveClick(DialogFragment dialog) {
-    }
-    @Override
-    public void onDialogNegativeClick(DialogFragment dialog) {
-        // Resume the camera
-        mScannerView.resumeCameraPreview(this);
-
-    }
-
-
-
-    @Override
-    public void onFormatsSaved(ArrayList<Integer> selectedIndices) {
-        mSelectedIndices = selectedIndices;
-        setupFormats();
-    }
-
-    @Override
-    public void onCameraSelected(int cameraId) {
-        mCameraId = cameraId;
-        mScannerView.startCamera(mCameraId);
-        mScannerView.setFlash(mFlash);
-        mScannerView.setAutoFocus(mAutoFocus);
-    }
-
-    public void setupFormats() {
-        List<BarcodeFormat> formats = new ArrayList<BarcodeFormat>();
-        if(mSelectedIndices == null || mSelectedIndices.isEmpty()) {
-            mSelectedIndices = new ArrayList<Integer>();
-            for(int i = 0; i < ZXingScannerView.ALL_FORMATS.size(); i++) {
-                mSelectedIndices.add(i);
+    public void setRefreshActionButtonState(final boolean refreshing) {
+        if (optionsMenu != null) {
+            final MenuItem refreshItem = optionsMenu
+                    .findItem(R.id.airport_menuRefresh);
+            if (refreshItem != null) {
+                if (refreshing) {
+                    refreshItem.setActionView(R.layout.actionbar_indeterminate_progress);
+                } else {
+                    refreshItem.setActionView(null);
+                }
             }
         }
-
-        for(int index : mSelectedIndices) {
-            formats.add(ZXingScannerView.ALL_FORMATS.get(index));
-        }
-        if(mScannerView != null) {
-            mScannerView.setFormats(formats);
-        }
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        mScannerView.stopCamera();
-        closeMessageDialog();
-        closeFormatsDialog();
     }
 }
