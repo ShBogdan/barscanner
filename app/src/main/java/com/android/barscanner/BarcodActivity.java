@@ -41,7 +41,8 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 
 public class BarcodActivity extends AppCompatActivity implements View.OnClickListener{
-    private static final String ROOT_URL = "http://77.87.144.159:8080/";
+//    private static final String ROOT_URL = "http://77.87.144.159:8080/";
+    private static final String ROOT_URL = "http://77.123.129.26/barcodeserver/";
     private final String BARCODES = "BARCODES";
     private final Integer CAMERA_PERMISSION = 55;
     private final Integer READ_EXST = 56;
@@ -200,6 +201,8 @@ public class BarcodActivity extends AppCompatActivity implements View.OnClickLis
 
             case R.id.send:
                 int i=0;
+                countImg = 0;
+                countSuccess = 0;
                 while (i++ <= 4) {
                     File f = getOutputMediaFilePath(mCode + "_"+i, true);
                     if(f.exists()){
@@ -207,6 +210,8 @@ public class BarcodActivity extends AppCompatActivity implements View.OnClickLis
                         uploadImage(getOutputMediaFilePath(mCode + "_"+i, true));
                     }
                 }
+//                uploadBarcode(mCatId, mCode);
+
                 break;
 
             default:
@@ -398,7 +403,7 @@ public class BarcodActivity extends AppCompatActivity implements View.OnClickLis
          */
         final ProgressDialog progressDialog;
         progressDialog = new ProgressDialog(BarcodActivity.this);
-        progressDialog.setMessage("Загрузка фото...");
+        progressDialog.setMessage("Загрузка кода...");
         progressDialog.show();
 
         //Create Upload Server Client
@@ -409,6 +414,7 @@ public class BarcodActivity extends AppCompatActivity implements View.OnClickLis
 
         RequestInterface service = retrofit.create(RequestInterface.class);
 
+        Log.d("MyLog", "cat " + cat + "code " + code);
 
         Map<String, String> data = new HashMap<>();
         data.put("cat", cat);
@@ -421,19 +427,20 @@ public class BarcodActivity extends AppCompatActivity implements View.OnClickLis
         resultCall.enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                progressDialog.dismiss();
-
                 // Response Success or Fail
                 if (response.isSuccessful()) {
                     Log.d("MyLog", "sucsses");
                     Toast.makeText(getApplication(), "Запись загружена на сервер", Toast.LENGTH_LONG).show();
                     dialogBCCreate();
                 } else {
+                    Toast.makeText(getApplication(), "Ошибка подключения попробуйте позже", Toast.LENGTH_LONG).show();
                     Log.d("MyLog", "error");
                 }
+                progressDialog.dismiss();
             }
             @Override
             public void onFailure(Call<ResponseBody> call, Throwable t) {
+                Toast.makeText(getApplication(), "Ошибка подключения попробуйте позже", Toast.LENGTH_LONG).show();
                 Log.d("MyLog", "onFailure");
                 progressDialog.dismiss();
             }

@@ -23,7 +23,7 @@ public interface RequestInterface {
     Call<ResponseBody> createNewProd(@QueryMap Map<String, String> options);
 
     @Multipart
-    @POST("/FileUploadServlet?phonePhoto=1")
+    @POST("/barcodeserver/FileUploadServlet?phonePhoto=1")
     Call<ResponseBody> uploadImage(@Part MultipartBody.Part file);
 }
 

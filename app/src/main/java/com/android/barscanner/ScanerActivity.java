@@ -28,6 +28,7 @@ public class ScanerActivity extends BaseScannerActivity implements MessageDialog
     private static final String FLASH_STATE = "FLASH_STATE";
     private static final String AUTO_FOCUS_STATE = "AUTO_FOCUS_STATE";
     private static final String SELECTED_FORMATS = "SELECTED_FORMATS";
+    private final String SERVER_CATEGORY = "SERVER_CATEGORY";
     private static final String CAMERA_ID = "CAMERA_ID";
     private final String BARCODES = "BARCODES";
     private final String LAST_CATEGORY = "LAST_CATEGORY";
@@ -260,9 +261,14 @@ public class ScanerActivity extends BaseScannerActivity implements MessageDialog
                 editorBc.commit();
                 editorLCs.commit();
 
+                String catName = spinner.getSelectedItem().toString();
+                SharedPreferences spServerCat = getSharedPreferences(SERVER_CATEGORY, Context.MODE_PRIVATE);
+                String catId = spServerCat.getString(catName, "");
+
                 Intent intent = new Intent(getBaseContext(), BarcodActivity.class);
                 intent.putExtra("EXTRA_CODE", barcode);
-                intent.putExtra("EXTRA_CAT", spinner.getSelectedItem().toString());
+                intent.putExtra("EXTRA_CAT", catName);
+                intent.putExtra("EXTRA_CAT_ID", catId);
                 startActivity(intent);
 
                 finish();

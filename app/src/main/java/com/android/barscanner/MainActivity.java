@@ -35,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
     private final String BARCODES = "BARCODES";
     private final String SERVER_BARCODES = "SERVER_BARCODES";
     private final String SERVER_CATEGORY = "SERVER_CATEGORY";
-    public static final String BASE_URL = "http://77.87.144.159:8080/";
+    public static final String BASE_URL = "http://77.123.129.26/barcodeserver/";
 
     private SharedPreferences spBc;
     private SharedPreferences spServerBc;
