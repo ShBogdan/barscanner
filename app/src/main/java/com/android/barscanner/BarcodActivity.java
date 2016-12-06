@@ -3,6 +3,7 @@ package com.android.barscanner;
 import android.Manifest;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -13,6 +14,7 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -23,6 +25,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -46,9 +51,11 @@ public class BarcodActivity extends AppCompatActivity implements View.OnClickLis
     private TextView mCodeTv, mCatTv;
     private ProgressBar mProgressBar;
     private Context mContext;
-    private String mCode, mCat;
+    private String mCode, mCat, mCatId;
     private Uri mFile;
     private Intent photoPickerIntent;
+    private int countSuccess;
+    private int countImg;
 
 
     @Override
@@ -68,14 +75,13 @@ public class BarcodActivity extends AppCompatActivity implements View.OnClickLis
     }
 
     private void showCodeInfo(){
-        mCode = getIntent().getStringExtra("EXTRA_CODE");
-        mCat = getIntent().getStringExtra("EXTRA_CAT");
-        //        mCode = "2313123";
-        //        mCat = "123123123";
-        mCodeTv = (TextView) findViewById(R.id.code);
-        mCatTv = (TextView) findViewById(R.id.cat);
+        mCode    = getIntent().getStringExtra("EXTRA_CODE");
+        mCat     = getIntent().getStringExtra("EXTRA_CAT");
+        mCatId   = getIntent().getStringExtra("EXTRA_CAT_ID");
+        mCodeTv  = (TextView)  findViewById(R.id.code);
+        mCatTv   = (TextView)  findViewById(R.id.cat);
         mCodeTv.setText(mCode);
-        mCatTv.setText(mCat);
+        mCatTv .setText(mCat);
     }
 
     private void initButtons(){
@@ -197,6 +203,7 @@ public class BarcodActivity extends AppCompatActivity implements View.OnClickLis
                 while (i++ <= 4) {
                     File f = getOutputMediaFilePath(mCode + "_"+i, true);
                     if(f.exists()){
+                        countImg++;
                         uploadImage(getOutputMediaFilePath(mCode + "_"+i, true));
                     }
                 }
@@ -365,11 +372,62 @@ public class BarcodActivity extends AppCompatActivity implements View.OnClickLis
         resultCall.enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                // Response Success or Fail
+                if (response.isSuccessful()) {
+                    countSuccess++;
+                    Log.d("MyLog", "sucsses: " + countSuccess);
+                    if(countSuccess==countImg){
+                        uploadBarcode(mCatId, mCode);
+                    }
+                } else {
+                    Log.d("MyLog", "error");
+                }
+                progressDialog.dismiss();
+            }
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                Log.d("MyLog", "onFailure");
+                progressDialog.dismiss();
+            }
+        });
+    }
+
+    private void uploadBarcode(String cat, String code) {
+        /**
+         * Progressbar to Display if you need
+         */
+        final ProgressDialog progressDialog;
+        progressDialog = new ProgressDialog(BarcodActivity.this);
+        progressDialog.setMessage("Загрузка фото...");
+        progressDialog.show();
+
+        //Create Upload Server Client
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(ROOT_URL)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        RequestInterface service = retrofit.create(RequestInterface.class);
+
+
+        Map<String, String> data = new HashMap<>();
+        data.put("cat", cat);
+        data.put("code", code);
+
+
+        Call<ResponseBody> resultCall = service.createNewProd(data);
+
+        // finally, execute the request
+        resultCall.enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 progressDialog.dismiss();
 
                 // Response Success or Fail
                 if (response.isSuccessful()) {
                     Log.d("MyLog", "sucsses");
+                    Toast.makeText(getApplication(), "Запись загружена на сервер", Toast.LENGTH_LONG).show();
+                    dialogBCCreate();
                 } else {
                     Log.d("MyLog", "error");
                 }
@@ -382,4 +440,68 @@ public class BarcodActivity extends AppCompatActivity implements View.OnClickLis
         });
     }
 
+    private void uploadImageSync() {
+        final ProgressDialog progressDialog;
+        progressDialog = new ProgressDialog(BarcodActivity.this);
+        progressDialog.setMessage("Загрузка фото...");
+        progressDialog.show();
+
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(ROOT_URL)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        RequestInterface service = retrofit.create(RequestInterface.class);
+
+        int i=0;
+        while (i++ <= 4) {
+            File f = getOutputMediaFilePath(mCode + "_"+i, true);
+            if(f.exists()){
+                RequestBody requestFile = RequestBody.create(MediaType.parse("multipart/form-data"), f);
+
+                MultipartBody.Part body = MultipartBody.Part.createFormData("file", f.getName(), requestFile);
+
+                final Call<ResponseBody> resultCall = service.uploadImage(body);
+
+                final int finalI = i;
+                Thread t = new Thread(new Runnable() {
+                    public void run() {
+                        try {
+                            resultCall.execute().body();
+                            Log.d("MyLog", "загружен"+ finalI);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }});
+                t.start();
+                try {
+                    t.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        progressDialog.dismiss();
+        Log.d("MyLog", "стоп");
+    }
+
+    private void dialogBCCreate(){
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Запись загружена. Удалить?");
+
+        builder.setPositiveButton("Удалить", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                removeItem();
+            }
+        });
+        builder.setNegativeButton("Отмена", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+
+            }
+        });
+
+        builder.show();
+    }
 }

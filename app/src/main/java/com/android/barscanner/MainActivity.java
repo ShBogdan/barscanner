@@ -21,6 +21,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -60,8 +61,8 @@ public class MainActivity extends AppCompatActivity {
                 if(categoryArray.size()==0){
                     Toast.makeText(getApplication(), "Вы не синхронизированы с базой", Toast.LENGTH_LONG).show();
                 }else{
-                Intent myIntent = new Intent(MainActivity.this, ScanerActivity.class);
-                MainActivity.this.startActivity(myIntent);}
+                    Intent myIntent = new Intent(MainActivity.this, ScanerActivity.class);
+                    MainActivity.this.startActivity(myIntent);}
             }
         });
 
@@ -83,8 +84,8 @@ public class MainActivity extends AppCompatActivity {
         List<Barcode> barcodesList = new ArrayList<>();
         for (Map.Entry<String, ?> entry : values.entrySet()) {
             Barcode barcodes = new Barcode(entry.getKey(), entry.getValue().toString());
-//            Log.d("MyLog", "getAllValues:");
-//            Log.d("MyLog", entry.getKey() + " " + entry.getValue().toString());
+            //            Log.d("MyLog", "getAllValues:");
+            //            Log.d("MyLog", entry.getKey() + " " + entry.getValue().toString());
             barcodesList.add(barcodes);
         }
         return barcodesList;
@@ -118,9 +119,9 @@ public class MainActivity extends AppCompatActivity {
                     .setText(barcode.code);
             ((TextView) convertView.findViewById(R.id.text2))
                     .setText(barcode.cat);
-//            if(barcodeArray.contains(barcode.code)){
-//                convertView.findViewById(R.id.linearLayout).setBackgroundResource(R.color.exist);
-//            }
+            //            if(barcodeArray.contains(barcode.code)){
+            //                convertView.findViewById(R.id.linearLayout).setBackgroundResource(R.color.exist);
+            //            }
             return convertView;
         }
     }
@@ -145,10 +146,14 @@ public class MainActivity extends AppCompatActivity {
                                                     TextView t2 = (TextView) view.findViewById(R.id.text2);
                                                     String code = t1.getText().toString();
                                                     String cat = t2.getText().toString();
+                                                    spServerCat = getSharedPreferences(SERVER_CATEGORY, Context.MODE_PRIVATE);
+                                                    String catId = spServerCat.getString(cat, "");
+
 
                                                     Intent intent = new Intent(getBaseContext(), BarcodActivity.class);
                                                     intent.putExtra("EXTRA_CODE", code);
                                                     intent.putExtra("EXTRA_CAT", cat);
+                                                    intent.putExtra("EXTRA_CAT_ID", catId);
                                                     startActivity(intent);
                                                 }
                                             }
@@ -173,6 +178,7 @@ public class MainActivity extends AppCompatActivity {
         for (Map.Entry<String, ?> entry : values.entrySet()) {
             categoryArray.add(entry.getKey());
         }
+        Collections.sort(categoryArray);
     }
 
     void getRetrofitBarcodes() {
@@ -250,9 +256,9 @@ public class MainActivity extends AppCompatActivity {
                     mEditorServerCat.putString(s.get(i).get(1), s.get(i).get(0));
                 }
                 mEditorServerCat.commit();
-               Toast.makeText(getApplication(), "Кактегории обновлены", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplication(), "Кактегории обновлены", Toast.LENGTH_SHORT).show();
                 setRefreshActionButtonState(false);
-
+                Collections.sort(categoryArray);
             }
 
             @Override
