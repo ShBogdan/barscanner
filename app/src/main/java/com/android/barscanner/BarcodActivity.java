@@ -26,7 +26,9 @@ import android.widget.Toast;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import okhttp3.MediaType;
@@ -38,6 +40,8 @@ import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
+
+import static com.android.barscanner.MainActivity.BASE_URL;
 
 
 public class BarcodActivity extends AppCompatActivity implements View.OnClickListener{
@@ -57,6 +61,7 @@ public class BarcodActivity extends AppCompatActivity implements View.OnClickLis
     private Intent photoPickerIntent;
     private int countSuccess;
     private int countImg;
+    private ArrayList<String> newBarcodeArray;
 
 
     @Override
@@ -70,7 +75,7 @@ public class BarcodActivity extends AppCompatActivity implements View.OnClickLis
         initButtons();
         initView();
         checkSDKSBuild();
-
+        getRetrofitBarcodes();
 
 
     }
@@ -382,7 +387,10 @@ public class BarcodActivity extends AppCompatActivity implements View.OnClickLis
                     countSuccess++;
                     Log.d("MyLog", "sucsses: " + countSuccess);
                     if(countSuccess==countImg){
-                        uploadBarcode(mCatId, mCode);
+                        if(!newBarcodeArray.contains(mCode)){
+                        uploadBarcode(mCatId, mCode);}else{
+                            Toast.makeText(getApplication(), "Фото обновлены", Toast.LENGTH_LONG).show();
+                        }
                     }
                 } else {
                     Log.d("MyLog", "error");
@@ -490,6 +498,47 @@ public class BarcodActivity extends AppCompatActivity implements View.OnClickLis
         }
         progressDialog.dismiss();
         Log.d("MyLog", "стоп");
+    }
+
+    void getRetrofitBarcodes() {
+        Log.d("MyLog", "Грузим новые баркоды с сервера");
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(BASE_URL)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        RequestInterface service = retrofit.create(RequestInterface.class);
+
+        Call<Result> call = service.getNewBarcodeList();
+
+        call.enqueue(new Callback<Result>() {
+
+            @Override
+            public void onResponse(Call<Result> call, Response<Result> response) {
+                Log.d("MyLog", "success");
+
+                newBarcodeArray = new ArrayList<>();
+
+                Result r = response.body();
+                List<List<String>> s = r.getNewBarcodes();
+                Log.d("MyLog", String.valueOf(s.size()));
+                for (int i = 0; i < s.size(); i++) {
+                    newBarcodeArray.add(s.get(i).get(2));
+                    Log.d("MyLog", s.get(i).get(2));
+                }
+                if(newBarcodeArray.contains(mCode)){
+                    Toast.makeText(getApplication(), "Такой код уже был загружен", Toast.LENGTH_LONG).show();
+                    mCodeTv.setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.remove));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Result> call, Throwable t) {
+                Log.d("MyLog", "error");
+
+            }
+        });
+
     }
 
     private void dialogBCCreate(){

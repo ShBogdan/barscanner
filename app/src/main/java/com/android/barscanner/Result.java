@@ -16,6 +16,14 @@ public class Result {
         return barcodes;
     }
 
+    @SerializedName("newproducts")
+    @Expose
+    private List<List<String>> newBarcodes = new ArrayList<List<String>>();
+
+    public List<List<String>> getNewBarcodes() {
+        return newBarcodes;
+    }
+
 
 
     @SerializedName("category")
