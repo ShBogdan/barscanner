@@ -19,11 +19,18 @@ public interface RequestInterface {
     @GET("barcodeinfo?getCategoryJSONobj")
     Call<Result> getCatList();
 
+    @GET("barcodeinfo?getNewProducts")
+    Call<Result> getNewBarcodeList();
+
     @GET("barcodeinfo?createProdPhone&pass=androidapppass")
     Call<ResponseBody> createNewProd(@QueryMap Map<String, String> options);
 
     @Multipart
-    @POST("/barcodeserver/FileUploadServlet?phonePhoto=1")
+    @POST("/FileUploadServlet?phonePhoto=1")
     Call<ResponseBody> uploadImage(@Part MultipartBody.Part file);
+
+//    @Multipart
+//    @POST("/barcodeserver/FileUploadServlet?phonePhoto=1")
+//    Call<ResponseBody> uploadImage(@Part MultipartBody.Part file);
 }
 
