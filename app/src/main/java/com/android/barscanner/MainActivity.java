@@ -1,10 +1,15 @@
 package com.android.barscanner;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -35,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
     private final String BARCODES = "BARCODES";
     private final String SERVER_BARCODES = "SERVER_BARCODES";
     private final String SERVER_CATEGORY = "SERVER_CATEGORY";
+    private final Integer CAMERA_PERMISSION = 55;
     public static final String BASE_URL = "http://77.123.129.26/barcodeserver/";
 
     private SharedPreferences spBc;
@@ -68,9 +74,9 @@ public class MainActivity extends AppCompatActivity {
 
         getSpBarcode();
         getSpCategory();
+        checkSDKSBuild();
 
         mBarCodeList = (ListView) findViewById(R.id.list_barcodes);
-
 
         //        Intent intent = new Intent(getBaseContext(), BarcodActivity.class);
         //        startActivity(intent);
@@ -306,6 +312,56 @@ public class MainActivity extends AppCompatActivity {
                     refreshItem.setActionView(null);
                 }
             }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case 55: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Log.d("MyLog", "Permission has been granted by user");
+
+                    //                    Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                    //                    startActivityForResult(intent, 1);
+
+                } else {
+                    Log.d("MyLog", "Permission has been denied by user");
+
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                }
+                return;
+            }
+
+            // other 'case' lines to check for other
+            // permissions this app might request
+        }
+    }
+
+    private void askForPermission(String permission, Integer requestCode) {
+        if (ContextCompat.checkSelfPermission(getApplication(), permission) != PackageManager.PERMISSION_GRANTED) {
+
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this, permission)) {
+
+                //This is called if user has denied the permission before
+                //In this case I am just asking the permission again
+                ActivityCompat.requestPermissions(MainActivity.this, new String[]{permission}, requestCode);
+
+            } else {
+
+                ActivityCompat.requestPermissions(MainActivity.this, new String[]{permission}, requestCode);
+            }
+        } else {
+//            Toast.makeText(this, "" + permission + " is already granted.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void checkSDKSBuild(){
+        if (Build.VERSION.SDK_INT >= 23) {
+            askForPermission(Manifest.permission.CAMERA, CAMERA_PERMISSION);
         }
     }
 }

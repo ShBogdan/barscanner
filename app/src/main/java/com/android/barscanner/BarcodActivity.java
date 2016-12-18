@@ -339,7 +339,7 @@ public class BarcodActivity extends AppCompatActivity implements View.OnClickLis
                 ActivityCompat.requestPermissions(BarcodActivity.this, new String[]{permission}, requestCode);
             }
         } else {
-            Toast.makeText(this, "" + permission + " is already granted.", Toast.LENGTH_SHORT).show();
+//            Toast.makeText(this, "" + permission + " is already granted.", Toast.LENGTH_SHORT).show();
         }
     }
 
