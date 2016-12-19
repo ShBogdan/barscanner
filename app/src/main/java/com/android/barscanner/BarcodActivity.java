@@ -45,7 +45,7 @@ import static com.android.barscanner.MainActivity.BASE_URL;
 
 
 public class BarcodActivity extends AppCompatActivity implements View.OnClickListener{
-//    private static final String ROOT_URL = "http://77.87.144.159:8080/";
+    //    private static final String ROOT_URL = "http://77.87.144.159:8080/";
     private static final String ROOT_URL = "http://77.123.129.26/barcodeserver/";
     private final String BARCODES = "BARCODES";
     private final Integer CAMERA_PERMISSION = 55;
@@ -116,35 +116,45 @@ public class BarcodActivity extends AppCompatActivity implements View.OnClickLis
 
     }
 
-    private void initView(){
+    private void initView() {
         mProgressBar = (ProgressBar) findViewById(R.id.progressBar);
 
         mImageView_1 = (ImageView) findViewById(R.id.imageView1);
         mImageView_1.setOnClickListener(this);
-        if(getOutputMediaFilePath(mCode+"_1",true).exists()){
-            mImageView_1.setImageURI(Uri.fromFile(getOutputMediaFilePath(mCode+"_1",true)));}
-
+        if (null != getOutputMediaFilePath(mCode + "_1", true)) {
+            if (getOutputMediaFilePath(mCode + "_1", true).exists()) {
+                mImageView_1.setImageURI(Uri.fromFile(getOutputMediaFilePath(mCode + "_1", true)));
+            }
+        }
         mImageView_2 = (ImageView) findViewById(R.id.imageView2);
         mImageView_2.setOnClickListener(this);
-        if(getOutputMediaFilePath(mCode+"_2",true).exists()){
-            mImageView_2.setImageURI(Uri.fromFile(getOutputMediaFilePath(mCode+"_2",true)));}
-
+        if (null != getOutputMediaFilePath(mCode + "_2", true)) {
+            if (getOutputMediaFilePath(mCode + "_2", true).exists()) {
+                mImageView_2.setImageURI(Uri.fromFile(getOutputMediaFilePath(mCode + "_2", true)));
+            }
+        }
         mImageView_3 = (ImageView) findViewById(R.id.imageView3);
         mImageView_3.setOnClickListener(this);
-        if(getOutputMediaFilePath(mCode+"_3",true).exists()){
-            mImageView_3.setImageURI(Uri.fromFile(getOutputMediaFilePath(mCode+"_3",true)));}
-
+        if (null != getOutputMediaFilePath(mCode + "_3", true)) {
+            if (getOutputMediaFilePath(mCode + "_3", true).exists()) {
+                mImageView_3.setImageURI(Uri.fromFile(getOutputMediaFilePath(mCode + "_3", true)));
+            }
+        }
         mImageView_4 = (ImageView) findViewById(R.id.imageView4);
         mImageView_4.setOnClickListener(this);
-        if(getOutputMediaFilePath(mCode+"_4",true).exists()){
-            mImageView_4.setImageURI(Uri.fromFile(getOutputMediaFilePath(mCode+"_4",true)));}
-
+        if (null != getOutputMediaFilePath(mCode + "_4", true)) {
+            if (getOutputMediaFilePath(mCode + "_4", true).exists()) {
+                mImageView_4.setImageURI(Uri.fromFile(getOutputMediaFilePath(mCode + "_4", true)));
+            }
+        }
         mImageView_5 = (ImageView) findViewById(R.id.imageView5);
         mImageView_5.setOnClickListener(this);
-        if(getOutputMediaFilePath(mCode+"_5",true).exists()){
-            mImageView_5.setImageURI(Uri.fromFile(getOutputMediaFilePath(mCode+"_5",true)));}
+        if (null != getOutputMediaFilePath(mCode + "_5", true)) {
+            if (getOutputMediaFilePath(mCode + "_5", true).exists()) {
+                mImageView_5.setImageURI(Uri.fromFile(getOutputMediaFilePath(mCode + "_5", true)));
+            }
+        }
     }
-
     @Override
     public void onClick(View v) {
 
@@ -236,8 +246,8 @@ public class BarcodActivity extends AppCompatActivity implements View.OnClickLis
                 Log.e("MyLog", "file does not exist");
             }
         }
-        Intent intent = new Intent(getBaseContext(), MainActivity.class);
-        startActivity(intent);
+//        Intent intent = new Intent(getBaseContext(), MainActivity.class);
+//        startActivity(intent);
         finish();
         Toast.makeText(this, "Запись удалена", Toast.LENGTH_SHORT).show();
     }
@@ -388,7 +398,7 @@ public class BarcodActivity extends AppCompatActivity implements View.OnClickLis
                     Log.d("MyLog", "sucsses: " + countSuccess);
                     if(countSuccess==countImg){
                         if(!newBarcodeArray.contains(mCode)){
-                        uploadBarcode(mCatId, mCode);}else{
+                            uploadBarcode(mCatId, mCode);}else{
                             Toast.makeText(getApplication(), "Фото обновлены", Toast.LENGTH_LONG).show();
                         }
                     }
@@ -440,6 +450,8 @@ public class BarcodActivity extends AppCompatActivity implements View.OnClickLis
                     Log.d("MyLog", "sucsses");
                     Toast.makeText(getApplication(), "Запись загружена на сервер", Toast.LENGTH_LONG).show();
                     dialogBCCreate();
+                    if(!newBarcodeArray.contains(mCode)){
+                        newBarcodeArray.add(mCode);}
                 } else {
                     Toast.makeText(getApplication(), "Ошибка подключения попробуйте позже", Toast.LENGTH_LONG).show();
                     Log.d("MyLog", "error");

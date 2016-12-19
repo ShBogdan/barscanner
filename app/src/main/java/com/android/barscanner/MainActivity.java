@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -68,7 +69,8 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(getApplication(), "Вы не синхронизированы с базой", Toast.LENGTH_LONG).show();
                 }else{
                     Intent myIntent = new Intent(MainActivity.this, ScanerActivity.class);
-                    MainActivity.this.startActivity(myIntent);}
+                    startActivity(myIntent);}
+
             }
         });
 
@@ -322,9 +324,9 @@ public class MainActivity extends AppCompatActivity {
                 // If request is cancelled, the result arrays are empty.
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Log.d("MyLog", "Permission has been granted by user");
-
-                    //                    Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                    //                    startActivityForResult(intent, 1);
+//
+//                                        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+//                                        startActivityForResult(intent, 1);
 
                 } else {
                     Log.d("MyLog", "Permission has been denied by user");
