@@ -550,7 +550,6 @@ public class BarcodActivity extends AppCompatActivity implements View.OnClickLis
 
             }
         });
-
     }
 
     private void dialogBCCreate(){

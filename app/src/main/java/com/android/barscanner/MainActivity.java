@@ -86,10 +86,6 @@ public class MainActivity extends AppCompatActivity {
         getSpBarcode();
         getSpCategory();
         checkSDKSBuild();
-
-
-        //        Intent intent = new Intent(getBaseContext(), BarcodActivity.class);
-        //        startActivity(intent);
     }
 
 
@@ -99,23 +95,21 @@ public class MainActivity extends AppCompatActivity {
         List<Barcode> barcodesList = new ArrayList<>();
         for (Map.Entry<String, ?> entry : values.entrySet()) {
             Barcode barcodes = new Barcode(entry.getKey(), entry.getValue().toString());
-            //            Log.d("MyLog", "getAllValues:");
-            //            Log.d("MyLog", entry.getKey() + " " + entry.getValue().toString());
             barcodesList.add(barcodes);
         }
-        barcodesList.add(new Barcode("11","gger"));
-        barcodesList.add(new Barcode("12","gerg"));
-        barcodesList.add(new Barcode("13","gerg"));
-        barcodesList.add(new Barcode("14","gdfgg"));
-        barcodesList.add(new Barcode("15","gdfgg"));
-        barcodesList.add(new Barcode("16","dfggg"));
-        barcodesList.add(new Barcode("17","bvgg"));
-        barcodesList.add(new Barcode("18","gvcg"));
-        barcodesList.add(new Barcode("19","gvcbg"));
-        barcodesList.add(new Barcode("10","gcvbg"));
-        barcodesList.add(new Barcode("112","gcbg"));
-        barcodesList.add(new Barcode("114","gcbbg"));
-        barcodesList.add(new Barcode("116","gerg"));
+//        barcodesList.add(new Barcode("99999999999999999","gger"));
+//        barcodesList.add(new Barcode("12","gerg"));
+//        barcodesList.add(new Barcode("13","gerg"));
+//        barcodesList.add(new Barcode("14","gdfgg"));
+//        barcodesList.add(new Barcode("15","gdfgg"));
+//        barcodesList.add(new Barcode("16","dfggg"));
+//        barcodesList.add(new Barcode("17","bvgg"));
+//        barcodesList.add(new Barcode("18","gvcg"));
+//        barcodesList.add(new Barcode("19","gvcbg"));
+//        barcodesList.add(new Barcode("10","gcvbg"));
+//        barcodesList.add(new Barcode("11111111111111111111","gcbg"));
+//        barcodesList.add(new Barcode("114","gcbbg"));
+//        barcodesList.add(new Barcode("116","gerg"));
 
         return barcodesList;
     }
@@ -207,6 +201,7 @@ public class MainActivity extends AppCompatActivity {
         for (Map.Entry<String, ?> entry : values.entrySet()) {
             barcodeArray.add(entry.getKey());
         }
+        Log.d("MyLog", barcodeArray.toString());
     }
 
     private void getSpCategory(){
@@ -226,6 +221,10 @@ public class MainActivity extends AppCompatActivity {
         spServerBc = getSharedPreferences(SERVER_BARCODES, Context.MODE_PRIVATE);
         mEditorServerBc = spServerBc.edit();
         mEditorServerBc.clear();
+        mEditorServerBc.commit();
+
+
+
 
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(BASE_URL)
@@ -248,9 +247,9 @@ public class MainActivity extends AppCompatActivity {
                     barcodeArray.add(s.get(i).get(0));
                     mEditorServerBc.putString(s.get(i).get(0), "");
                 }
-                mEditorServerBc.commit();
+                Log.d("MyLog", barcodeArray.toString());
+                getRetrofitNewBarcodes();
 //                initListView();
-                initRecycleView();
                 Toast.makeText(getApplication(), "Коды обновлены", Toast.LENGTH_SHORT).show();
                 setRefreshActionButtonState(false);
 
@@ -265,6 +264,42 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+    }
+
+    void getRetrofitNewBarcodes() {
+        Log.d("MyLog", "Грузим новые баркоды с сервера");
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(BASE_URL)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        RequestInterface service = retrofit.create(RequestInterface.class);
+
+        Call<Result> call = service.getNewBarcodeList();
+
+        call.enqueue(new Callback<Result>() {
+
+            @Override
+            public void onResponse(Call<Result> call, Response<Result> response) {
+                Log.d("MyLog", "success");
+                Result r = response.body();
+                List<List<String>> s = r.getNewBarcodes();
+                Log.d("MyLog", String.valueOf(s.size()));
+                for (int i = 0; i < s.size(); i++) {
+                    barcodeArray.add(s.get(i).get(2));
+                    mEditorServerBc.putString(s.get(i).get(2), "");
+                }
+                Log.d("MyLog", barcodeArray.toString());
+                mEditorServerBc.commit();
+                initRecycleView();
+            }
+
+            @Override
+            public void onFailure(Call<Result> call, Throwable t) {
+                Log.d("MyLog", "error");
+
+            }
+        });
     }
 
     void getRetrofitCategoty() {
@@ -406,12 +441,14 @@ public class MainActivity extends AppCompatActivity {
         public class ViewHolder extends RecyclerView.ViewHolder {
             public TextView mTextViewCode;
             public TextView mTextViewCat;
-            public CardView mColorLL;
+            public LinearLayout mColorLL;
+            public CardView mCardView;
             public ViewHolder(View v) {
                 super(v);
-                mTextViewCode = ((TextView) v.findViewById(R.id.text1));
-                mTextViewCat =((TextView) v.findViewById(R.id.text2));
-                mColorLL = (CardView) v.findViewById(R.id.card_view);
+                mTextViewCode = (TextView) v.findViewById(R.id.text1);
+                mTextViewCat =(TextView) v.findViewById(R.id.text2);
+                mColorLL = (LinearLayout) v.findViewById(R.id.linearLayout);
+                mCardView = (CardView) v.findViewById(R.id.card_view);
             }
         }
 
@@ -431,12 +468,22 @@ public class MainActivity extends AppCompatActivity {
             Barcode barcode = myDataset.get(position);
             holder.mTextViewCode.setText(barcode.code);
             holder.mTextViewCat.setText(barcode.cat);;
+            holder.mColorLL.setBackgroundColor(getResources().getColor(R.color.icons));
+            holder.mCardView.setCardBackgroundColor(getResources().getColor(R.color.icons));
+
             if(barcodeArray.contains(barcode.code)){
-                holder.mColorLL.setCardBackgroundColor(R.color.exist);
+                holder.mColorLL.setBackgroundColor(getResources().getColor(R.color.exist));
+                holder.mCardView.setCardBackgroundColor(getResources().getColor(R.color.exist));
             }
 
             holder.mColorLL.setOnClickListener(this);
         }
+
+        @Override
+        public long getItemId(int position) {
+            return super.getItemId(position);
+        }
+
         @Override
         public int getItemCount() {
             return myDataset.size();
