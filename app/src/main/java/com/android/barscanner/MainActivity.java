@@ -12,6 +12,9 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.CardView;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -22,6 +25,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -55,6 +59,11 @@ public class MainActivity extends AppCompatActivity {
     public static ArrayList<String> categoryArray;
     public static ArrayList<String> barcodeArray;
 
+
+    private RecyclerView mRecyclerView;
+    private RecyclerView.Adapter mAdapter;
+    private RecyclerView.LayoutManager mLayoutManager;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -78,11 +87,9 @@ public class MainActivity extends AppCompatActivity {
         getSpCategory();
         checkSDKSBuild();
 
-        mBarCodeList = (ListView) findViewById(R.id.list_barcodes);
 
         //        Intent intent = new Intent(getBaseContext(), BarcodActivity.class);
         //        startActivity(intent);
-
     }
 
 
@@ -96,6 +103,20 @@ public class MainActivity extends AppCompatActivity {
             //            Log.d("MyLog", entry.getKey() + " " + entry.getValue().toString());
             barcodesList.add(barcodes);
         }
+        barcodesList.add(new Barcode("11","gger"));
+        barcodesList.add(new Barcode("12","gerg"));
+        barcodesList.add(new Barcode("13","gerg"));
+        barcodesList.add(new Barcode("14","gdfgg"));
+        barcodesList.add(new Barcode("15","gdfgg"));
+        barcodesList.add(new Barcode("16","dfggg"));
+        barcodesList.add(new Barcode("17","bvgg"));
+        barcodesList.add(new Barcode("18","gvcg"));
+        barcodesList.add(new Barcode("19","gvcbg"));
+        barcodesList.add(new Barcode("10","gcvbg"));
+        barcodesList.add(new Barcode("112","gcbg"));
+        barcodesList.add(new Barcode("114","gcbbg"));
+        barcodesList.add(new Barcode("116","gerg"));
+
         return barcodesList;
     }
 
@@ -127,9 +148,9 @@ public class MainActivity extends AppCompatActivity {
                     .setText(barcode.code);
             ((TextView) convertView.findViewById(R.id.text2))
                     .setText(barcode.cat);
-            //            if(barcodeArray.contains(barcode.code)){
-            //                convertView.findViewById(R.id.linearLayout).setBackgroundResource(R.color.exist);
-            //            }
+            if(barcodeArray.contains(barcode.code)){
+                convertView.findViewById(R.id.linearLayout).setBackgroundResource(R.color.exist);
+            }
             return convertView;
         }
     }
@@ -137,7 +158,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        initListView();
+//        initListView();
+        initRecycleView();
 
 
     }
@@ -146,6 +168,7 @@ public class MainActivity extends AppCompatActivity {
         Log.d("MyLog", "Формируем ListView");
 
         ArrayAdapter<Barcode> adapter = new BarCodeAdapter(this, getAllValues());
+        mBarCodeList = (ListView) findViewById(R.id.list_barcodes);
         mBarCodeList.setAdapter(adapter);
         mBarCodeList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                                                 @Override
@@ -157,7 +180,6 @@ public class MainActivity extends AppCompatActivity {
                                                     spServerCat = getSharedPreferences(SERVER_CATEGORY, Context.MODE_PRIVATE);
                                                     String catId = spServerCat.getString(cat, "");
 
-
                                                     Intent intent = new Intent(getBaseContext(), BarcodActivity.class);
                                                     intent.putExtra("EXTRA_CODE", code);
                                                     intent.putExtra("EXTRA_CAT", cat);
@@ -166,6 +188,15 @@ public class MainActivity extends AppCompatActivity {
                                                 }
                                             }
         );
+    }
+
+    private void initRecycleView(){
+        mRecyclerView = (RecyclerView) findViewById(R.id.my_recycler_view);
+        mRecyclerView.setHasFixedSize(true);
+        mLayoutManager = new LinearLayoutManager(this);
+        mRecyclerView.setLayoutManager(mLayoutManager);
+        mAdapter = new MyAdapter(getAllValues());
+        mRecyclerView.setAdapter(mAdapter);
     }
 
     private void getSpBarcode(){
@@ -218,7 +249,8 @@ public class MainActivity extends AppCompatActivity {
                     mEditorServerBc.putString(s.get(i).get(0), "");
                 }
                 mEditorServerBc.commit();
-                initListView();
+//                initListView();
+                initRecycleView();
                 Toast.makeText(getApplication(), "Коды обновлены", Toast.LENGTH_SHORT).show();
                 setRefreshActionButtonState(false);
 
@@ -234,6 +266,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
     }
+
     void getRetrofitCategoty() {
         Log.d("MyLog", "Грузим категории с сервера и сохраняем в sp");
 
@@ -364,6 +397,65 @@ public class MainActivity extends AppCompatActivity {
     private void checkSDKSBuild(){
         if (Build.VERSION.SDK_INT >= 23) {
             askForPermission(Manifest.permission.CAMERA, CAMERA_PERMISSION);
+        }
+    }
+
+    public class MyAdapter extends RecyclerView.Adapter<MyAdapter.ViewHolder> implements View.OnClickListener {
+        private ArrayList<Barcode> myDataset;
+
+        public class ViewHolder extends RecyclerView.ViewHolder {
+            public TextView mTextViewCode;
+            public TextView mTextViewCat;
+            public CardView mColorLL;
+            public ViewHolder(View v) {
+                super(v);
+                mTextViewCode = ((TextView) v.findViewById(R.id.text1));
+                mTextViewCat =((TextView) v.findViewById(R.id.text2));
+                mColorLL = (CardView) v.findViewById(R.id.card_view);
+            }
+        }
+
+        public MyAdapter(List<Barcode> mDataset) {
+            myDataset = (ArrayList<Barcode>) mDataset;
+        }
+
+        @Override
+        public MyAdapter.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item, parent, false);
+            ViewHolder vh = new ViewHolder(v);
+            return vh;
+        }
+
+        @Override
+        public void onBindViewHolder(ViewHolder holder, int position) {
+            Barcode barcode = myDataset.get(position);
+            holder.mTextViewCode.setText(barcode.code);
+            holder.mTextViewCat.setText(barcode.cat);;
+            if(barcodeArray.contains(barcode.code)){
+                holder.mColorLL.setCardBackgroundColor(R.color.exist);
+            }
+
+            holder.mColorLL.setOnClickListener(this);
+        }
+        @Override
+        public int getItemCount() {
+            return myDataset.size();
+        }
+
+        @Override
+        public void onClick(View view) {
+            TextView t1 = (TextView) view.findViewById(R.id.text1);
+            TextView t2 = (TextView) view.findViewById(R.id.text2);
+            String code = t1.getText().toString();
+            String cat = t2.getText().toString();
+            spServerCat = getSharedPreferences(SERVER_CATEGORY, Context.MODE_PRIVATE);
+            String catId = spServerCat.getString(cat, "");
+
+            Intent intent = new Intent(getBaseContext(), BarcodActivity.class);
+            intent.putExtra("EXTRA_CODE", code);
+            intent.putExtra("EXTRA_CAT", cat);
+            intent.putExtra("EXTRA_CAT_ID", catId);
+            startActivity(intent);
         }
     }
 }
